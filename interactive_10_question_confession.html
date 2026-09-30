@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Para sa'yo 🤍</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(135deg,#120817,#35133d,#170a21);color:#fff;font-family:Georgia,serif;display:flex;justify-content:center;align-items:center;padding:18px}
+.card{width:min(650px,100%);padding:26px;border-radius:25px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);box-shadow:0 20px 60px #0008;backdrop-filter:blur(12px);text-align:center}
+h1,h2{color:#ffd5e9} p{line-height:1.8;font-size:17px;color:#f7e9f2}
+input,textarea{width:100%;padding:14px;border:0;border-radius:14px;margin:8px 0;font:16px Georgia;outline:none}
+textarea{min-height:110px;resize:vertical}
+button{border:0;border-radius:13px;padding:12px 18px;margin:6px;font-weight:bold;cursor:pointer;background:#ff9dca;color:#32102f}
+.secondary{background:#eee;color:#333}.heart{font-size:40px}.small{font-size:13px;opacity:.7}
+.timer{font: bold 45px Arial;color:#ffd1e6;margin:10px}
+.progress{height:7px;background:#ffffff20;border-radius:10px;overflow:hidden;margin:18px 0}.bar{height:100%;background:#ff9dca}
+.video{height:360px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(145deg,#29102f,#7b275d);margin:15px 0}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:28px;opacity:0;transform:scale(.96);transition:opacity .6s,transform .6s}.slide.active{opacity:1;transform:scale(1)}
+.answer{font-size:24px;line-height:1.45;color:#fff}.q{font-size:14px;color:#ffc4df}
+</style>
+</head>
+<body><div class="card" id="app"></div>
+<script>
+const PASSWORD="secret";
+const questions=[
+"Sa unang tingin mo sa mensaheng ito, ano ang naisip mo?",
+"May tao ka bang naiisip habang binabasa mo ito? 👀",
+"Sa tingin mo, sino kaya ang tinutukoy ko?",
+"May hinala ka na ba kung sino siya?",
+"Kung ikaw ang tinutukoy... ano ang magiging reaction mo?",
+"May isang tao ka bang gustong makausap ngayon?",
+"Kung may aamin sa'yo, gusto mo bang malaman nang direkta?",
+"Sa lahat ng clues, sino ang unang pumasok sa isip mo?",
+"Kung tama ang hinala mo, ano ang gusto mong sabihin sa akin?",
+"Last question: tingin mo ba ikaw talaga ang crush ko? 🤍"
+];
+const answers=[]; let i=0,t=30,timer=null;
+function login(){app.innerHTML=`<div class="heart">🔐</div><h1>May sikreto dito...</h1><p>Enter the password para magsimula.</p><input id="pw" type="password" placeholder="Password"><button onclick="unlock()">Unlock</button><p id="err" class="small"></p>`}
+function unlock(){if(pw.value===PASSWORD){i=0;showQuestion()}else err.textContent="Mali ang password. 🤭"}
+function showQuestion(){
+clearInterval(timer);t=30;
+app.innerHTML=`<div class="small">QUESTION ${i+1} OF ${questions.length}</div><div class="progress"><div class="bar" style="width:${(i+1)*10}%"></div></div>
+<h2>${questions[i]}</h2><div class="timer" id="timer">00:30</div>
+<textarea id="ans" placeholder="Isulat mo ang sagot mo dito..."></textarea>
+<button onclick="saveAnswer()">Submit & Continue</button>
+<button class="secondary" onclick="back()">Back</button>
+<p class="small">May 30 seconds para sagutin ito. Kapag natapos ang oras, automatic na babalik.</p>`;
+timer=setInterval(()=>{t--;document.getElementById("timer").textContent="00:"+String(t).padStart(2,"0");if(t<=0){clearInterval(timer);back()}},1000)
+}
+function saveAnswer(){
+answers[i]=document.getElementById("ans").value.trim()||"(Walang sagot)";
+if(i<questions.length-1){i++;showQuestion()}else showVideo();
+}
+function back(){clearInterval(timer);if(i>0){i--;showQuestion()}else login()}
+function showVideo(){
+clearInterval(timer);
+let slides=questions.map((q,n)=>`<div class="slide ${n===0?'active':''}" id="s${n}"><div class="q">${q}</div><div class="answer">${escapeHtml(answers[n]||"(Walang sagot)")}</div></div>`).join("");
+app.innerHTML=`<div class="heart">🎬🤍</div><h1>Mga Sagot Mo</h1><p>Ginawa ko itong parang maliit na short video ng mga sagot mo.</p><div class="video">${slides}</div><p class="small" id="counter">1 / ${questions.length}</p><button onclick="playVideo()">▶ Play Again</button><button onclick="shareAnswers()">Share Answers</button><button class="secondary" onclick="downloadAnswers()">Save Answers</button>`;
+playVideo();
+}
+function playVideo(){
+let n=0;clearInterval(window.videoTimer);
+const slides=document.querySelectorAll(".slide");slides.forEach(x=>x.classList.remove("active"));slides[0].classList.add("active");counter.textContent=`1 / ${slides.length}`;
+window.videoTimer=setInterval(()=>{slides[n].classList.remove("active");n++;if(n>=slides.length){clearInterval(window.videoTimer);return}slides[n].classList.add("active");counter.textContent=`${n+1} / ${slides.length}`},2200)
+}
+function escapeHtml(x){return x.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function textAnswers(){return questions.map((q,n)=>`${n+1}. ${q}\nAnswer: ${answers[n]||"(Walang sagot)"}`).join("\n\n")}
+async function shareAnswers(){
+const text="Mga sagot mo sa 10 questions:\n\n"+textAnswers();
+if(navigator.share){try{await navigator.share({title:"Mga Sagot Mo 🤍",text})}catch(e){}}
+else {await navigator.clipboard.writeText(text);alert("Nakopya na ang answers. Pwede mo nang i-paste sa Messenger.")}}
+function downloadAnswers(){
+const blob=new Blob([textAnswers()],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="answers.txt";a.click();URL.revokeObjectURL(a.href)
+}
+login();
+</script></body></html>
